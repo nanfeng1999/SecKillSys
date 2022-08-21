@@ -9,11 +9,11 @@ import (
 var client *redis.Client
 
 // 开启redis连接池
-func initRedisConnection(config conf.AppConfig)  {
+func initRedisConnection(config conf.AppConfig) {
 	client = redis.NewClient(&redis.Options{
 		Addr:     config.App.Redis.Address,
 		Password: config.App.Redis.Password, // It's ok if password is "".
-		DB:       0,  // use default DB
+		DB:       0,                         // use default DB
 	})
 
 	if _, err := FlushAll(); err != nil {
@@ -26,7 +26,7 @@ func FlushAll() (string, error) {
 	return client.FlushAll().Result()
 }
 
-func PrepareScript(script string ) string{
+func PrepareScript(script string) string {
 	// 检验脚本是否存在
 	scriptsExists, err := client.ScriptExists(script).Result()
 	if err != nil {
@@ -40,13 +40,16 @@ func PrepareScript(script string ) string{
 		if err != nil {
 			panic("Failed to load script " + script + " err: " + err.Error())
 		}
+		// 返回脚本的哈希
 		return scriptSHA
 	}
+
+	// 如果脚本存在直接返回空
 	print("Script Exists.")
 	return ""
 }
 
-func EvalSHA(sha string, args []string)  (interface{}, error) {
+func EvalSHA(sha string, args []string) (interface{}, error) {
 	val, err := client.EvalSha(sha, args).Result()
 	if err != nil {
 		print("Error executing evalSHA... " + err.Error())
@@ -57,7 +60,7 @@ func EvalSHA(sha string, args []string)  (interface{}, error) {
 
 // redis operation SET
 func SetForever(key string, value interface{}) (string, error) {
-	val, err := client.Set(key, value, 0).Result()  // expiration表示无过期时间
+	val, err := client.Set(key, value, 0).Result() // expiration表示无过期时间
 	return val, err
 }
 
@@ -85,8 +88,3 @@ func SetIsMember(key string, field string) (bool, error) {
 func GetSetMembers(key string) ([]string, error) {
 	return client.SMembers(key).Result()
 }
-
-
-
-
-

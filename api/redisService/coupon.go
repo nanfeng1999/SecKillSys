@@ -25,28 +25,31 @@ func getCouponKeyByName(couponName string) string {
 // 缓存用户拥有优惠券/商家创建优惠券的信息
 func CacheHasCoupon(coupon model.Coupon) (int64, error) {
 	key := getHasCouponsKeyByName(coupon.Username) //得到的key其实就是 coupon.Username-has
+	// add set 存储用户拥有的所有优惠券名字集合 username-has : set()
 	val, err := data.SetAdd(key, coupon.CouponName)
 	return val, err
 }
 
-// 缓存优惠券的完整信息
+// CacheCoupon 缓存优惠券的完整信息
 func CacheCoupon(coupon model.Coupon) (bool, error) {
+	// 存储优惠券信息到redis中 使用hash对象存储
 	key := getCouponKeyByCoupon(coupon)
 	fields := map[string]interface{}{
-		"id": coupon.Id,
-		"username": coupon.Username,
-		"couponName": coupon.CouponName,
-		"amount": coupon.Amount,
-		"left": coupon.Left,
-		"stock": coupon.Stock,
+		"id":          coupon.Id,
+		"username":    coupon.Username,
+		"couponName":  coupon.CouponName,
+		"amount":      coupon.Amount,
+		"left":        coupon.Left,
+		"stock":       coupon.Stock,
 		"description": coupon.Description,
 	}
 	val, err := data.SetMapForever(key, fields)
 	return val, err
 }
 
-// 缓存优惠券
+// CacheCouponAndHasCoupon 缓存优惠券
 func CacheCouponAndHasCoupon(coupon model.Coupon) error {
+	// 添加优惠券 用户拥有的优惠券 使用set去重
 	if _, err := CacheHasCoupon(coupon); err != nil {
 		return err
 	}
@@ -57,13 +60,14 @@ func CacheCouponAndHasCoupon(coupon model.Coupon) error {
 		return err
 	} else {
 		if user.IsSeller() {
+			// 如果是卖家的话 存储卖家拥有的优惠券信息到Hash表中
 			_, err = CacheCoupon(coupon)
 		}
 		return err
 	}
 }
 
-// 从缓存获取优惠券
+// GetCoupon 根据优惠券名字从缓存获取优惠券的具体信息
 func GetCoupon(couponName string) model.Coupon {
 	key := getCouponKeyByName(couponName)
 	values, err := data.GetMap(key, "id", "username", "couponName", "amount", "left", "stock", "description")
@@ -100,23 +104,21 @@ func GetCoupon(couponName string) model.Coupon {
 
 }
 
-// 从缓存获取某个用户的所有优惠券
+// GetCoupons 从缓存获取某个用户的所有优惠券
 func GetCoupons(userName string) ([]model.Coupon, error) {
 	var coupons []model.Coupon
 	hasCouponsKey := getHasCouponsKeyByName(userName)
+	// 获取该用户拥有的所有秒杀券名字
 	couponNames, err := data.GetSetMembers(hasCouponsKey)
 	if err != nil {
 		println("Error when getting coupon members. " + err.Error())
 		return nil, err
 	}
 	// TODO: 使用数组, 不使用slice append
+	// 获取所有秒杀券具体的信息
 	for _, couponName := range couponNames {
 		coupon := GetCoupon(couponName)
 		coupons = append(coupons, coupon)
 	}
 	return coupons, nil
 }
-
-
-
-

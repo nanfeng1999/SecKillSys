@@ -26,12 +26,12 @@ func FetchCoupon(ctx *gin.Context) {
 	}
 
 	// 不能够是出售方
-	if claims.Kind == "saler"{//user.IsSeller() {
+	if claims.Kind == "saler" { //user.IsSeller() {
 		ctx.JSON(http.StatusUnauthorized, gin.H{ErrMsgKey: "Sellers aren't allowed to get coupons."})
 		return
 	}
-	paramSellerName := ctx.Param("username")// 出售方的名字
-	paramCouponName := ctx.Param("name") // 优惠券的名字
+	paramSellerName := ctx.Param("username") // 出售方的名字
+	paramCouponName := ctx.Param("name")     // 优惠券的名字
 
 	// ---用户抢优惠券。后面需要高并发处理---
 	// 先在缓存执行原子性的秒杀操作。将原子性地完成"判断能否秒杀-执行秒杀"的步骤
@@ -82,7 +82,7 @@ func getValidCouponSlice(allCoupons []model.Coupon, page int64) []model.Coupon {
 	}
 	couponLen := int64(len(allCoupons))
 	startIndex := page * couponPageSize
-	endIndex := page * couponPageSize + couponPageSize
+	endIndex := page*couponPageSize + couponPageSize
 	if startIndex < 0 {
 		startIndex = 0
 	} else if startIndex > couponLen {
@@ -109,8 +109,7 @@ func getDataStatusCode(len int) int {
 	}
 }
 
-
-// 查询优惠券
+// GetCoupons 查询优惠券
 func GetCoupons(ctx *gin.Context) {
 	// 登陆检查token
 	claims := ctx.MustGet("claims").(*myjwt.CustomClaims)
@@ -120,6 +119,7 @@ func GetCoupons(ctx *gin.Context) {
 		return
 	}
 
+	// 获取查询的用户名和页号
 	queryUserName, queryPage := ctx.Param("username"), ctx.Query("page")
 
 	// 检查page参数, TODO：全部下标改为从1开始
@@ -127,8 +127,10 @@ func GetCoupons(ctx *gin.Context) {
 	var page int64
 	var tmpPage int64
 	if queryPage == "" {
+		// 不传页号 那么默认是1
 		tmpPage = 1
 	} else {
+		// 解析页号
 		var err error
 		tmpPage, err = strconv.ParseInt(ctx.Query("page"), 10, 64)
 		if err != nil {
@@ -144,7 +146,10 @@ func GetCoupons(ctx *gin.Context) {
 	//log.Printf("Querying coupon with name %s, page %d\n", queryUserName, page)
 	// TODO: 查询用户需要从缓存查，这里需要改，是有错的。在主goroutine里查询数据库，会极大的拖慢处理速度
 	// 查找对应用户
-	queryUser := model.User{Username:queryUserName}
+	// 应该从缓存中查找更好
+
+	// 找到第一个用户 如果没有找到报错
+	queryUser := model.User{Username: queryUserName}
 	queryErr := data.Db.Where(&queryUser).
 		First(&queryUser).Error
 	if queryErr != nil {
@@ -163,6 +168,7 @@ func GetCoupons(ctx *gin.Context) {
 			return
 		}
 
+		// 根据页数得到切片
 		coupons := getValidCouponSlice(allCoupons, page)
 
 		if queryUser.IsSeller() {
@@ -203,7 +209,7 @@ func GetCoupons(ctx *gin.Context) {
 
 }
 
-// 商家添加优惠券
+// AddCoupon 商家添加优惠券
 func AddCoupon(ctx *gin.Context) {
 	// 登陆检查token
 	claims := ctx.MustGet("claims").(*myjwt.CustomClaims)
@@ -213,15 +219,14 @@ func AddCoupon(ctx *gin.Context) {
 		return
 	}
 
-
-	if claims.Kind == "customer"{//!user.IsSeller() {
+	if claims.Kind == "customer" { //!user.IsSeller() {
 		log.Println("Only sellers can create coupons.")
 		ctx.JSON(http.StatusUnauthorized, gin.H{ErrMsgKey: "Only sellers can create coupons."})
 		return
 	}
 
 	// 检查参数
-	paramUserName := ctx.Param("username")  // 注意: 该参数是网址路径参数
+	paramUserName := ctx.Param("username") // 注意: 该参数是网址路径参数
 	var postCoupon model.ReqCoupon
 	if err := ctx.BindJSON(&postCoupon); err != nil {
 		log.Println("Only receive JSON format.")
@@ -307,7 +312,7 @@ func RegisterUser(ctx *gin.Context) {
 	}
 
 	// 插入用户
-	user := model.User{Username: postUser.Username, Kind: postUser.Kind, Password: model.GetMD5(postUser.Password)}//密码用MD5加密再存储
+	user := model.User{Username: postUser.Username, Kind: postUser.Kind, Password: model.GetMD5(postUser.Password)} //密码用MD5加密再存储
 	err := data.Db.Create(&user).Error
 	if err != nil {
 		log.Println("Insert user failed. Maybe user name duplicates.")
@@ -318,14 +323,3 @@ func RegisterUser(ctx *gin.Context) {
 		return
 	}
 }
-
-
-
-
-
-
-
-
-
-
-

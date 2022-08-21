@@ -7,6 +7,7 @@ import (
 )
 
 const configFilePath string = "config-dev.yaml"
+
 var configFile []byte
 
 type AppConfig struct {
@@ -14,36 +15,37 @@ type AppConfig struct {
 }
 
 type App struct {
-	Database Database `yaml:"database"`
-	Redis Redis `yaml:"redis"`
-	FlushAllForTest bool `yaml:"flushAllForTest"`
+	Database        Database `yaml:"database"`
+	Redis           Redis    `yaml:"redis"`
+	FlushAllForTest bool     `yaml:"flushAllForTest"`
 }
 
 type Database struct {
-	Type string `yaml:"type"`
-	User string `yaml:"user"`
+	Type     string `yaml:"type"`
+	User     string `yaml:"user"`
 	Password string `yaml:"password"`
-	DbName string `yaml:"dbName"`
-	Address string `yaml:"address"`
-	MaxIdle int `yaml:"maxIdle"`
-	MaxOpen int `yaml:"maxOpen"`
+	DbName   string `yaml:"dbName"`
+	Address  string `yaml:"address"`
+	MaxIdle  int    `yaml:"maxIdle"`
+	MaxOpen  int    `yaml:"maxOpen"`
 }
 
 type Redis struct {
-	Address string `yaml:"address"`
-	Network string `yaml:"network"`
-	Password string `yaml:"password"`
-	MaxIdle int `yaml:"maxIdle"`
-	MaxActive int `yaml:"maxActive"`
-	IdleTimeout int `yaml:"idleTimeout"`
+	Address     string `yaml:"address"`
+	Network     string `yaml:"network"`
+	Password    string `yaml:"password"`
+	MaxIdle     int    `yaml:"maxIdle"`
+	MaxActive   int    `yaml:"maxActive"`
+	IdleTimeout int    `yaml:"idleTimeout"`
 }
 
-func GetAppConfig() (appConfig AppConfig,err error){
+func GetAppConfig() (appConfig AppConfig, err error) {
+	// 读取yaml文件
 	err = yaml.Unmarshal(configFile, &appConfig)
-	return appConfig,err
+	return appConfig, err
 }
 
-func init(){
+func init() {
 	var err error
 	configFile, err = ioutil.ReadFile(configFilePath)
 	if err != nil {

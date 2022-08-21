@@ -12,7 +12,7 @@ import (
 
 var Db *gorm.DB
 
-func initMysql(config conf.AppConfig){
+func initMysql(config conf.AppConfig) {
 	fmt.Println("Load dbService config...")
 
 	// 设置连接相关的参数
@@ -34,8 +34,8 @@ func initMysql(config conf.AppConfig){
 	}
 
 	// 初始化数据库
-	user := model.User{}
-	coupon := &model.Coupon{}
+	user := model.User{}      // 定义用户
+	coupon := &model.Coupon{} // 定义优惠券
 
 	// 设置连接池连接数
 	Db.DB().SetMaxOpenConns(config.App.Database.MaxOpen)
@@ -45,11 +45,13 @@ func initMysql(config conf.AppConfig){
 	tables := []interface{}{user, coupon}
 
 	for _, table := range tables {
+		// 如果不存在表的话 那么自动建表
 		if !Db.HasTable(table) {
 			Db.AutoMigrate(table)
 		}
 	}
 
+	// 删除所有记录
 	if config.App.FlushAllForTest {
 		println("FlushAllForTest is true. Delete records of all tables.")
 		for _, table := range tables {
@@ -58,8 +60,8 @@ func initMysql(config conf.AppConfig){
 	}
 
 	// 创建唯一索引
-	Db.Model(user).AddUniqueIndex("username_index", "username")  // 用户的用户名唯一
-	Db.Model(coupon).AddUniqueIndex("coupon_index",  "coupon_name")  // 优惠券的(用户名, 优惠券名)唯一
+	Db.Model(user).AddUniqueIndex("username_index", "username")    // 用户的用户名唯一
+	Db.Model(coupon).AddUniqueIndex("coupon_index", "coupon_name") // 优惠券的(用户名, 优惠券名)唯一
 
 	println("---Mysql connection is initialized.---")
 }

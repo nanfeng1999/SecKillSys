@@ -13,9 +13,9 @@ import (
 	"time"
 )
 
-func getExpect(t *testing.T) *httpexpect.Expect{
+func getExpect(t *testing.T) *httpexpect.Expect {
 	e := httpexpect.WithConfig(httpexpect.Config{
-		BaseURL: "http://127.0.0.1:20080",
+		BaseURL:  "http://127.0.0.1:20080",
 		Reporter: httpexpect.NewAssertReporter(t),
 
 		// use http.Client with a cookie jar and timeout
@@ -36,40 +36,44 @@ func getExpect(t *testing.T) *httpexpect.Expect{
 func TestRegister(t *testing.T) {
 	e := getExpect(t)
 
-	for i := 0 ; i <= 10000 ; i++{
+	// 注册1000个消费者账号 密码都是123456
+	for i := 0; i <= 1000; i++ {
 		e.POST("/api/users").
 			WithJSON(RegisterForm{"customer" + strconv.Itoa(i), "123456", model.NormalCustomer}).
 			Expect()
 	}
 
-	for i := 0 ; i <= 10 ; i++{
+	// 注册10个商家账号 密码都是123456
+	for i := 0; i <= 10; i++ {
 		e.POST("/api/users").
-			WithJSON(RegisterForm{"seller"+ strconv.Itoa(i), "123456", model.NormalSeller}).
+			WithJSON(RegisterForm{"seller" + strconv.Itoa(i), "123456", model.NormalSeller}).
 			Expect()
 	}
 }
 
-func TestAddCoupon(t *testing.T){
+func TestAddCoupon(t *testing.T) {
 	e := getExpect(t)
 	var demoAddCouponForm AddCouponForm = AddCouponForm{
 		Name:        demoCouponName,
-		Amount:      100 ,
+		Amount:      100,
 		Stock:       demoStock,
 		Description: "kiana: this is my good coupon",
 	}
 
-
-	for i := 0 ; i< 1 ; i++{
+	for i := 0; i < 1; i++ {
+		// 商家1 登录
 		resp := e.POST("/api/auth").
-			WithJSON(LoginForm{"seller"+ strconv.Itoa(i), "123456"}).
+			WithJSON(LoginForm{"seller" + strconv.Itoa(i), "123456"}).
 			Expect()
 
+		// 期待登录成功
 		resp.Status(http.StatusOK).JSON().Object().
 			ValueEqual(api.ErrMsgKey, "").
 			ValueEqual("kind", model.NormalSeller)
 
-		for j := 0 ; j < 10 ; j++{
-			demoAddCouponForm.Name = "my_coupon" + strconv.Itoa(j)+ "seller"+strconv.Itoa(i)
+		// 对卖家1 添加10种优惠券
+		for j := 0; j < 10; j++ {
+			demoAddCouponForm.Name = "my_coupon" + strconv.Itoa(j) + "seller" + strconv.Itoa(i)
 			e.POST(addCouponPath, "seller"+strconv.Itoa(i)).
 				WithJSON(demoAddCouponForm).
 				WithHeader("Authorization", resp.Header("Authorization").Raw()).
@@ -80,30 +84,35 @@ func TestAddCoupon(t *testing.T){
 	}
 }
 
-func TestFetch(t *testing.T){
+func TestFetch(t *testing.T) {
 	t1 := time.Now()
 	e := getExpect(t)
-	var val int32= 0
+	var val int32 = 0
 	wg := new(sync.WaitGroup)
 	wg.Add(100)
-	for i := 0 ; i< 500 ; i++{
+	for i := 0; i < 500; i++ {
+		// 500个协程一起并发请求
 		go func(j int) {
 			defer wg.Done()
+
 			resp := e.POST("/api/auth").
-				WithJSON(LoginForm{"customer"+ strconv.Itoa(j), "123456"}).
+				WithJSON(LoginForm{"customer" + strconv.Itoa(j), "123456"}).
 				Expect().Status(http.StatusOK)
+
 			cnt := e.PATCH(fetchCouponPath, "seller0", "my_coupon6seller0").
 				WithHeader("Authorization", resp.Header("Authorization").Raw()).
 				Expect()
-			if cnt.Raw().StatusCode == 200{
+
+			if cnt.Raw().StatusCode == 200 {
 				atomic.AddInt32(&val, 1)
 			}
+
 		}(i)
 
 	}
 	wg.Wait()
 
-	fmt.Println("用户抢到的券总数为",val)
+	fmt.Println("用户抢到的券总数为", val)
 	t2 := time.Now()
 	fmt.Println(t2.Sub(t1))
 }

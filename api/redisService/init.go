@@ -38,19 +38,22 @@ const secKillScript = `
   return 1;
 `
 
-var secKillSHA string  // SHA expression of secKillScript
+var secKillSHA string // SHA expression of secKillScript
 
 // 将数据加载到缓存预热，防止缓存穿透
 // 预热加载了商品库存key
 
-func preHeatKeys(){
+func preHeatKeys() {
+	// 从MYSQL中取出所有的优惠券的信息
 	coupons, err := dbService.GetAllCoupons()
 	if err != nil {
 		panic("Error when getting all coupons." + err.Error())
 	}
 	fmt.Println(coupons)
 
-	for _, coupon := range coupons{
+	// 遍历优惠券
+	for _, coupon := range coupons {
+		// 存储到redis中 hash对象
 		err := CacheCouponAndHasCoupon(coupon)
 		if err != nil {
 			panic("Error while setting redis keys of coupons. " + err.Error())
@@ -61,13 +64,9 @@ func preHeatKeys(){
 }
 
 func init() {
-	// 让redis加载秒杀的lua脚本
+	// 让redis加载秒杀的lua脚本 并初始化得到脚本的SHA
 	secKillSHA = data.PrepareScript(secKillScript)
 
 	// 预热
 	preHeatKeys()
 }
-
-
-
-

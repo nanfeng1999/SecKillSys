@@ -8,7 +8,6 @@ import (
 
 // 下面是一大堆自定义的Error
 type redisEvalError struct {
-
 }
 
 func (e redisEvalError) Error() string {
@@ -16,7 +15,7 @@ func (e redisEvalError) Error() string {
 }
 
 type userHasCouponError struct {
-	userName string
+	userName   string
 	couponName string
 }
 
@@ -25,7 +24,7 @@ func (e userHasCouponError) Error() string {
 }
 
 type noSuchCouponError struct {
-	userName string
+	userName   string
 	couponName string
 }
 
@@ -34,7 +33,7 @@ func (e noSuchCouponError) Error() string {
 }
 
 type noCouponLeftError struct {
-	userName string
+	userName   string
 	couponName string
 }
 
@@ -57,12 +56,14 @@ func (e CouponLeftResError) Error() string {
 
 func IsRedisEvalError(err error) bool {
 	switch err.(type) {
-	case redisEvalError: return true
-	default: return false
+	case redisEvalError:
+		return true
+	default:
+		return false
 	}
 }
 
-// 尝试在redis进行原子性的秒杀操作
+// CacheAtomicSecKill 尝试在redis进行原子性的秒杀操作
 func CacheAtomicSecKill(userName string, sellerName string, couponName string) (int64, error) {
 	// 根据sha，执行预先加载的秒杀lua脚本
 	userHasCouponsKey := getHasCouponsKeyByName(userName)
@@ -87,12 +88,13 @@ func CacheAtomicSecKill(userName string, sellerName string, couponName string) (
 		return -1, noSuchCouponError{sellerName, couponName}
 	case couponLeftRes == -3:
 		return -1, noCouponLeftError{sellerName, couponName}
-	case couponLeftRes == 1:  // left为0时, 就是存量为0, 那就是没抢到, 也可能原本为1, 抢完变成了0.
+	case couponLeftRes == 1: // left为0时, 就是存量为0, 那就是没抢到, 也可能原本为1, 抢完变成了0.
 		return couponLeftRes, nil
-	default: {
-		log.Fatal("Unexpected return value.")
-		return -1, CouponLeftResError{couponLeftRes}
-	}
+	default:
+		{
+			log.Fatal("Unexpected return value.")
+			return -1, CouponLeftResError{couponLeftRes}
+		}
 
 	}
 }

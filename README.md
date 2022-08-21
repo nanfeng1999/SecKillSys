@@ -28,8 +28,8 @@ cocurrent_test.go是一个并发秒·杀脚本。
      conf    |   配置文件读取模块
      data    |   mysql和redis的初始化和基本链接管理
      doc     |   README文件
-    engine   ｜  调度层
-   httptest  ｜  测试文件
+    engine   |  调度层
+   httptest  |  测试文件
   middleware |   用于授权、验权对中间层
     model    |   基本对象
     

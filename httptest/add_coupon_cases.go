@@ -13,31 +13,33 @@ import (
 
 /* 定义了添加优惠券的表格，函数等等 */
 const addCouponPath = "/api/users/{username}/coupons"
+
 type AddCouponForm struct {
-	Name        string `json:"name"`
-	Amount      int `json:"amount"`      // 应当int
-	Description string `json:"description"`
-	Stock       int `json:"stock"`       // 应当int
+	Name        string `json:"name"`        // 谁加这个优惠券
+	Amount      int    `json:"amount"`      // 添加的数量
+	Description string `json:"description"` // 描述
+	Stock       int    `json:"stock"`       // 库存
 }
 
 // 定义了demo优惠券
 var demoCouponName = "my_coupon"
-var demoAmount     = 10
-var demoStock      = 50
+var demoAmount = 10
+var demoStock = 50
 var demoAddCouponForm AddCouponForm = AddCouponForm{
-	Name:        demoCouponName,
-	Amount:      demoAmount ,
-	Stock:       demoStock,
-	Description: "kiana: this is my good coupon",
+	Name:        demoCouponName,                  //
+	Amount:      demoAmount,                      //
+	Stock:       demoStock,                       //
+	Description: "kiana: this is my good coupon", //
 }
 
-// 测试添加优惠券时的表格格式
+// 测试添加优惠券时的表格格式 测试格式错误时候的情况 返回结果是否符合预期
 func testAddCouponWrongFormat(e *httpexpect.Expect) {
-	// 登录商家
+	// 退出
 	logout(e)
+	// 商家登录
 	demoSellerLogin(e)
 
-	// amount值不是数字
+	// amount值为0的情况下
 	amountNotNumberForm := demoAddCouponForm
 	amountNotNumberForm.Amount = 0
 	e.POST(addCouponPath, demoSellerName).
@@ -46,7 +48,7 @@ func testAddCouponWrongFormat(e *httpexpect.Expect) {
 		Status(http.StatusBadRequest).JSON().Object().
 		ValueEqual(api.ErrMsgKey, "Amount field wrong format.")
 
-	// stock值不是数字
+	// stock值为0的情况下
 	stockNotNumberForm := demoAddCouponForm
 	stockNotNumberForm.Stock = 0
 	e.POST(addCouponPath, demoSellerName).
@@ -55,7 +57,7 @@ func testAddCouponWrongFormat(e *httpexpect.Expect) {
 		Status(http.StatusBadRequest).JSON().Object().
 		ValueEqual(api.ErrMsgKey, "Stock field wrong format.")
 
-	// 优惠券名为空
+	// 优惠券名为空的情况下
 	emptyCouponNameForm := demoAddCouponForm
 	emptyCouponNameForm.Name = ""
 	e.POST(addCouponPath, demoSellerName).
@@ -64,7 +66,7 @@ func testAddCouponWrongFormat(e *httpexpect.Expect) {
 		Status(http.StatusBadRequest).JSON().Object().
 		ValueEqual(api.ErrMsgKey, "Coupon name or description should not be empty.")
 
-	// 优惠券描述为空
+	// 优惠券描述为空的情况下
 	emptyDescriptionForm := demoAddCouponForm
 	emptyDescriptionForm.Description = ""
 	e.POST(addCouponPath, demoSellerName).
@@ -78,6 +80,7 @@ func testAddCouponWrongFormat(e *httpexpect.Expect) {
 func testAddCouponWrongUser(e *httpexpect.Expect) {
 	// 登录顾客
 	demoCustomerLogin(e)
+
 	// 顾客不可添加优惠券
 	e.POST(addCouponPath, demoCustomerName).
 		WithForm(demoAddCouponForm).
@@ -96,7 +99,7 @@ func testAddCouponWrongUser(e *httpexpect.Expect) {
 }
 
 // 测试未登录添加优惠券
-func testAddCouponNotLogIn(e * httpexpect.Expect)  {
+func testAddCouponNotLogIn(e *httpexpect.Expect) {
 	logout(e)
 
 	e.POST(addCouponPath, demoSellerName).
@@ -106,7 +109,7 @@ func testAddCouponNotLogIn(e * httpexpect.Expect)  {
 		ValueEqual(api.ErrMsgKey, "Not Logged in.")
 }
 
-func testAddCouponDuplicate(e *httpexpect.Expect)  {
+func testAddCouponDuplicate(e *httpexpect.Expect) {
 	resp := demoSellerLogin(e)
 
 	e.POST(addCouponPath, demoSellerName).
@@ -126,7 +129,7 @@ func testAddCouponDuplicate(e *httpexpect.Expect)  {
 }
 
 // 添加demo优惠券(事先不得添加过)
-func demoAddCoupon(e *httpexpect.Expect)  {
+func demoAddCoupon(e *httpexpect.Expect) {
 	resp := demoSellerLogin(e)
 
 	e.POST(addCouponPath, demoSellerName).

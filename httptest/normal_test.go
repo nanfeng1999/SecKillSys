@@ -13,6 +13,7 @@ const loginPath = "/api/users"
 
 // 测试登录不存在的用户或错误的密码
 func testWrongLogin(e *httpexpect.Expect) {
+	// 用户名错误
 	wrongUserName := "wrongUserName"
 	e.POST(loginPath).
 		WithJSON(LoginForm{wrongUserName, "whatever_pw"}).
@@ -20,6 +21,7 @@ func testWrongLogin(e *httpexpect.Expect) {
 		Status(http.StatusBadRequest).JSON().Object().
 		ValueNotEqual(api.ErrMsgKey, "No such queryUser.")
 
+	// 密码错误
 	wrongPassword := "sysucs515"
 	e.POST(loginPath).
 		WithJSON(LoginForm{demoSellerName, wrongPassword}).
@@ -34,7 +36,7 @@ func testUsersLogin(e *httpexpect.Expect) {
 	demoCustomerLogin(e)
 }
 
-func isGetCouponUserNotExist(e *httpexpect.Expect, notExistUsername string, resp *httpexpect.Response)  {
+func isGetCouponUserNotExist(e *httpexpect.Expect, notExistUsername string, resp *httpexpect.Response) {
 	e.GET(getCouponPath, notExistUsername).
 		WithHeader("Authorization", resp.Header("Authorization").Raw()).
 		Expect().
@@ -49,14 +51,14 @@ func testAddAndGetCoupon(e *httpexpect.Expect) {
 	// 3. 添加优惠券后，用户能查到优惠券，且格式合法
 
 	veryLargePage := 10000
-	invalidCustomerName := "someImpCustomer__"  // Some impossible customer
+	invalidCustomerName := "someImpCustomer__" // Some impossible customer
 
 	/* 作为商家和用户分别获取一次优惠券信息 */
 	// --顾客查询顾客/商家的优惠券--
-	res := demoCustomerLogin(e)
-	fmt.Println(1111,res.Header("Authorization"))
+	res := demoCustomerLogin(e)                    // 消费者登录
+	fmt.Println(1111, res.Header("Authorization")) // 打印token信息
 	// 自己没抢过优惠券，查询不到
-	isEmptyBody(e, demoCustomerName, -1,res)
+	isEmptyBody(e, demoCustomerName, -1, res)
 	isEmptyBody(e, demoCustomerName, 0, res)
 	isEmptyBody(e, demoCustomerName, veryLargePage, res)
 	// 商家没创建过优惠券，查询不到
@@ -88,7 +90,7 @@ func testAddAndGetCoupon(e *httpexpect.Expect) {
 	isEmptyBody(e, demoSellerName, veryLargePage, res)
 	isCustomerSchema(e, demoSellerName, 0, res)
 	// 自己没抢过优惠券，查询不到
-	isEmptyBody(e, demoCustomerName, -1,res)
+	isEmptyBody(e, demoCustomerName, -1, res)
 	isEmptyBody(e, demoCustomerName, 0, res)
 	isEmptyBody(e, demoCustomerName, veryLargePage, res)
 	// 不可查询其它用户
@@ -116,7 +118,7 @@ func testFetchCoupon(e *httpexpect.Expect, couponAmount int) {
 	fetchDemoCouponSuccess(e, res)
 
 	// 商家优惠券数量-1 顾客可看到该优惠券。
-	isCouponExpectedLeft(e,  demoSellerName, 0, 0, couponAmount - 1, res)
+	isCouponExpectedLeft(e, demoSellerName, 0, 0, couponAmount-1, res)
 	isNonEmptyCoupons(e, demoSellerName, 0, res)
 	isSellerSchema(e, demoSellerName, 0, res)
 	isNonEmptyCoupons(e, demoCustomerName, 0, res)
@@ -131,13 +133,13 @@ func TestNormal(t *testing.T) {
 	_, e := startServer(t)
 	defer data.Close()
 
-	// 注册用户,商家
+	// 注册两个用户 和 一个商家
 	registerDemoUsers(e)
 
-	// 用户登录错误
+	// 用户名 或 密码 错误的登录
 	testWrongLogin(e)
 
-	// 用户登录
+	// 一个用户登录 和 一个商家登录
 	testUsersLogin(e)
 
 	// 测试查看、添加优惠券功能

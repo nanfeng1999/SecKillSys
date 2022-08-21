@@ -10,7 +10,7 @@ app:
   redis:
     address: 127.0.0.1:6379
     network: tcp
-    password: 123456
+    #password: 123456
     maxIdle: 1000
     maxActive: 2000
     idleTimeout: 200
